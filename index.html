@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -9,14 +10,14 @@
 *{box-sizing:border-box;margin:0;padding:0}
 :root{
   --green:#1D9E75;--green-dark:#0F6E56;--green-light:#f0faf6;
-  --orange:#D85A30;--blue:#2563eb;
-  --bg:#f5f5f0;--surface:white;--border:#e8e8e8;
+  --orange:#D85A30;--bg:#f5f5f0;--border:#e8e8e8;
   --text:#1a1a1a;--text-muted:#888;--text-light:#aaa;
   --sq-light:#f0ece4;--sq-dark:#b58863;
-  --sq-hl:rgba(255,213,0,0.6);--sq-check:rgba(220,38,38,0.5);
+  --brilliant:#1a9e5a;--great:#2563eb;--best:#16a34a;
+  --good:#65a30d;--inaccuracy:#f59e0b;--miss:#ea580c;--blunder:#dc2626;
 }
 body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
-.app{max-width:960px;margin:0 auto;padding:1.5rem 1rem}
+.app{max-width:980px;margin:0 auto;padding:1.5rem 1rem}
 .header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem}
 .logo{display:flex;align-items:center;gap:10px}
 .logo-icon{width:38px;height:38px;background:#1a1a1a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px}
@@ -37,7 +38,6 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .profile-avatar{width:44px;height:44px;border-radius:50%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;overflow:hidden}
 .profile-avatar img{width:100%;height:100%;object-fit:cover}
 .profile-name{font-size:15px;font-weight:700}
-.profile-sub{font-size:12px;color:var(--text-muted)}
 .stat-pill{display:inline-flex;align-items:center;gap:4px;font-size:12px;background:var(--bg);border-radius:99px;padding:3px 9px;margin-right:4px;margin-top:4px}
 .game-list{max-height:420px;overflow-y:auto}
 .game-item{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s}
@@ -50,50 +50,72 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .result-draw{background:#f3f4f6;color:#374151}
 .game-meta{font-size:12px;color:var(--text-muted);margin-top:2px}
 
-/* ── Custom chess board ── */
-.chess-board-wrap{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
-.eval-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px}
+/* Board */
+.chess-board-wrap{display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.eval-bar-col{display:flex;flex-direction:column;align-items:center;gap:4px;padding-top:2px}
 #eval-bar{width:14px;border-radius:4px;overflow:hidden;border:1px solid #ccc;display:flex;flex-direction:column}
-#eval-black{background:#1a1a1a;transition:height .4s}
-#eval-white{background:#f0ece4;transition:height .4s}
-#eval-num{font-size:11px;font-weight:700;color:var(--text-muted);font-family:'DM Mono',monospace}
-.board-and-side{display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;flex:1}
+#eval-black{background:#1a1a1a;transition:height .5s}
+#eval-white{background:#f0ece4;transition:height .5s}
+#eval-num{font-size:11px;font-weight:700;font-family:'DM Mono',monospace;color:var(--text-muted)}
 #chess-board{display:grid;grid-template-columns:repeat(8,1fr);border:2px solid #8b6914;border-radius:2px;user-select:none;flex-shrink:0}
-.sq{width:48px;height:48px;display:flex;align-items:center;justify-content:center;font-size:36px;cursor:pointer;position:relative;transition:background .1s}
+.sq{display:flex;align-items:center;justify-content:center;cursor:pointer;position:relative;transition:background .1s}
 .sq.light{background:var(--sq-light)}
 .sq.dark{background:var(--sq-dark)}
-.sq.hl{background:var(--sq-hl)!important}
-.sq.selected-sq{background:rgba(20,85,255,0.4)!important}
-.sq.last-from{background:rgba(255,213,0,0.5)!important}
+.sq.last-from{background:rgba(255,213,0,0.45)!important}
 .sq.last-to{background:rgba(255,213,0,0.7)!important}
-.sq.check{background:var(--sq-check)!important}
-.sq .coord-file{position:absolute;bottom:1px;right:2px;font-size:9px;font-weight:700;opacity:.7;font-family:'DM Mono',monospace;line-height:1}
-.sq .coord-rank{position:absolute;top:1px;left:2px;font-size:9px;font-weight:700;opacity:.7;font-family:'DM Mono',monospace;line-height:1}
+.sq.check{background:rgba(220,38,38,0.5)!important}
+.coord-file{position:absolute;bottom:1px;right:2px;font-size:9px;font-weight:700;opacity:.6;font-family:'DM Mono',monospace;line-height:1}
+.coord-rank{position:absolute;top:1px;left:2px;font-size:9px;font-weight:700;opacity:.6;font-family:'DM Mono',monospace;line-height:1}
 .piece{line-height:1;pointer-events:none}
 
 /* Side panel */
-.board-side{min-width:200px;flex:1}
-.player-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 0;margin:4px 0}
+.board-side{min-width:210px;flex:1}
+.player-bar{display:flex;align-items:center;justify-content:space-between;padding:5px 2px;margin:3px 0}
 .player-name{font-size:13px;font-weight:600}
-.player-rating{font-size:12px;color:var(--text-muted);margin-left:4px}
+.player-rating{font-size:12px;color:var(--text-muted);margin-left:3px}
+.accuracy-badge{font-size:11px;font-weight:700;padding:2px 7px;border-radius:99px}
 .tab-row{display:flex;gap:4px;margin-bottom:10px}
 .tab-btn{font-size:12px;padding:5px 11px;border:1px solid var(--border);border-radius:99px;background:white;cursor:pointer;color:var(--text-muted);font-family:inherit;transition:all .15s}
 .tab-btn.active{background:#1a1a1a;border-color:#1a1a1a;color:white;font-weight:600}
-.move-list{display:flex;flex-wrap:wrap;gap:2px;max-height:200px;overflow-y:auto;padding:2px 0}
+.move-list{display:flex;flex-wrap:wrap;gap:2px;max-height:210px;overflow-y:auto;padding:2px 0}
 .move-num{font-size:11px;color:var(--text-muted);padding:3px 2px;align-self:center;font-family:'DM Mono',monospace}
-.move-btn{font-size:12px;padding:3px 7px;border:none;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);transition:all .15s;border-left:3px solid transparent}
+.move-btn{font-size:12px;padding:3px 7px;border:none;border-radius:4px;cursor:pointer;font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);transition:all .15s;position:relative;white-space:nowrap}
 .move-btn:hover{background:#e5e5e5}
 .move-btn.active{background:#1a1a1a;color:white}
-.move-btn.blunder{border-left-color:#dc2626}
-.move-btn.mistake{border-left-color:#ea580c}
-.move-btn.inaccuracy{border-left-color:#f59e0b}
-.move-btn.good{border-left-color:#16a34a}
-.controls{display:flex;gap:5px;margin-top:8px}
+.move-class-dot{display:inline-block;width:6px;height:6px;border-radius:50%;margin-left:3px;vertical-align:middle}
+.controls{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap}
 .ctrl-btn{background:white;border:1px solid var(--border);border-radius:7px;padding:6px 10px;font-size:16px;cursor:pointer;transition:all .15s;line-height:1}
 .ctrl-btn:hover{background:var(--bg)}
-.ctrl-btn:disabled{opacity:.3;cursor:not-allowed}
+
+/* Classification badge */
+.class-badge{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;margin-bottom:8px}
+.class-brilliant{background:#dcfce7;color:var(--brilliant)}
+.class-great{background:#dbeafe;color:var(--great)}
+.class-best{background:#dcfce7;color:var(--best)}
+.class-good{background:#ecfccb;color:var(--good)}
+.class-inaccuracy{background:#fef3c7;color:var(--inaccuracy)}
+.class-miss{background:#ffedd5;color:var(--miss)}
+.class-blunder{background:#fee2e2;color:var(--blunder)}
+
 .ai-explanation{font-size:13px;line-height:1.7;background:var(--green-light);border-radius:10px;padding:10px 14px;margin-top:8px}
-.eval-display{font-size:20px;font-weight:700;margin-bottom:2px}
+.eval-score{font-size:20px;font-weight:700;margin-bottom:2px;font-family:'DM Mono',monospace}
+.best-move-box{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-top:8px;font-size:12px}
+
+/* Analysis progress */
+.analysis-progress{background:white;border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:10px}
+.progress-bar-wrap{height:6px;background:#f0f0f0;border-radius:99px;overflow:hidden;margin-top:6px}
+.progress-bar{height:6px;background:var(--green);border-radius:99px;transition:width .3s}
+
+/* Accuracy meter */
+.accuracy-meter{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.acc-item{flex:1;min-width:80px;text-align:center;background:var(--bg);border-radius:8px;padding:8px}
+.acc-val{font-size:18px;font-weight:700}
+.acc-lbl{font-size:11px;color:var(--text-muted);margin-top:2px}
+
+/* Classification legend */
+.legend{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.legend-item{font-size:11px;padding:2px 7px;border-radius:99px;font-weight:600}
+
 .spin{display:inline-block;width:14px;height:14px;border:2px solid var(--green-light);border-top-color:var(--green);border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle}
 @keyframes spin{to{transform:rotate(360deg)}}
 .loading-dots{display:inline-flex;gap:4px}
@@ -102,13 +124,12 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 .loading-dots span:nth-child(3){animation-delay:.4s}
 @keyframes bounce{0%,80%,100%{transform:scale(.6);opacity:.4}40%{transform:scale(1);opacity:1}}
 .no-data{text-align:center;padding:1.5rem;color:var(--text-light);font-size:13px}
-@media(max-width:600px){.sq{width:40px;height:40px;font-size:28px}}
-@media(max-width:480px){.sq{width:34px;height:34px;font-size:24px}}
+@media(max-width:600px){.sq{font-size:26px!important}}
+@media(max-width:420px){.sq{font-size:22px!important}}
 </style>
 </head>
 <body>
 <div class="app">
-
 <div class="header">
   <div class="logo">
     <div class="logo-icon">&#9822;</div>
@@ -128,14 +149,14 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
-<!-- PROFILE + GAME LIST -->
+<!-- PROFILE + GAMES -->
 <div id="profile-section" style="display:none">
   <div class="card">
     <div class="profile-row">
       <div class="profile-avatar" id="profile-avatar">&#128100;</div>
       <div style="flex:1">
         <div class="profile-name" id="profile-name"></div>
-        <div class="profile-sub" id="profile-sub"></div>
+        <div style="font-size:12px;color:var(--text-muted)" id="profile-sub"></div>
         <div id="profile-stats" style="margin-top:4px"></div>
       </div>
       <button class="ghost-btn" onclick="resetSearch()" style="font-size:12px">&#8592; Change</button>
@@ -164,22 +185,44 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
   </div>
 </div>
 
-<!-- BOARD SECTION -->
+<!-- BOARD -->
 <div id="board-section" style="display:none">
   <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
     <button class="ghost-btn" onclick="closeBoard()" style="font-size:12px">&#8592; Games</button>
     <div id="game-title" style="font-size:13px;font-weight:600;color:var(--text-muted)"></div>
+    <button class="green-btn" id="full-analysis-btn" onclick="runFullAnalysis()" style="margin-left:auto;font-size:12px;padding:7px 14px">&#9881; Full analysis</button>
   </div>
+
+  <!-- Analysis progress bar -->
+  <div id="analysis-progress" class="analysis-progress" style="display:none">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <div style="font-size:13px;font-weight:600">Analyzing game with Stockfish...</div>
+      <div id="analysis-pct" style="font-size:12px;color:var(--text-muted)">0%</div>
+    </div>
+    <div class="progress-bar-wrap"><div class="progress-bar" id="analysis-bar" style="width:0%"></div></div>
+    <div id="analysis-status" style="font-size:12px;color:var(--text-muted);margin-top:4px">Starting engine...</div>
+  </div>
+
+  <!-- Accuracy summary (shown after analysis) -->
+  <div id="accuracy-summary" style="display:none" class="card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:700">Game Analysis</div>
+    </div>
+    <div class="accuracy-meter" id="accuracy-meter"></div>
+    <div class="legend" id="class-legend"></div>
+  </div>
+
   <div class="card">
     <div class="player-bar">
       <div><span class="player-name" id="top-name"></span><span class="player-rating" id="top-rating"></span></div>
+      <span class="accuracy-badge" id="top-accuracy" style="display:none"></span>
     </div>
     <div class="chess-board-wrap">
       <div class="eval-bar-col">
         <div id="eval-bar" style="height:384px"><div id="eval-black" style="height:50%"></div><div id="eval-white" style="height:50%"></div></div>
         <div id="eval-num">0.0</div>
       </div>
-      <div class="board-and-side">
+      <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;flex:1">
         <div id="chess-board"></div>
         <div class="board-side">
           <div class="tab-row">
@@ -197,14 +240,15 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
             </div>
           </div>
           <div id="tab-analysis" style="display:none">
-            <div id="analysis-content"><div class="no-data">Navigate to a move then click Analyze</div></div>
-            <button class="green-btn" id="analyze-btn" onclick="analyzePosition()" style="width:100%;justify-content:center;margin-top:8px">&#9881; Analyze position</button>
+            <div id="analysis-content"><div class="no-data">Run full analysis or navigate to a move and click Analyze</div></div>
+            <button class="green-btn" id="analyze-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;margin-top:8px;font-size:12px">&#9881; Analyze this move</button>
           </div>
         </div>
       </div>
     </div>
     <div class="player-bar" style="margin-top:4px">
       <div><span class="player-name" id="bottom-name"></span><span class="player-rating" id="bottom-rating"></span></div>
+      <span class="accuracy-badge" id="bottom-accuracy" style="display:none"></span>
     </div>
   </div>
 </div>
@@ -212,16 +256,297 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
 <script>
-// ── Piece Unicode map ─────────────────────────────────────
+const SUPABASE_URL='https://rttwejkhzjjdnbzpwqtg.supabase.co';
+const SUPABASE_KEY='sb_publishable_0bIPDF8WlM5-rQEMvRiIHQ_wu84Buvc';
+const EDGE_FN=SUPABASE_URL+'/functions/v1/ai-chess';
+
 const PIECES={
   wK:'&#9812;',wQ:'&#9813;',wR:'&#9814;',wB:'&#9815;',wN:'&#9816;',wP:'&#9817;',
   bK:'&#9818;',bQ:'&#9819;',bR:'&#9820;',bB:'&#9821;',bN:'&#9822;',bP:'&#9823;'
 };
 
-const OPENROUTER_KEY='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';
+const CLASS_INFO={
+  brilliant:{label:'Brilliant !!',symbol:'!!',color:'var(--brilliant)',bg:'#dcfce7'},
+  great:{label:'Great !',symbol:'!',color:'var(--great)',bg:'#dbeafe'},
+  best:{label:'Best',symbol:'★',color:'var(--best)',bg:'#dcfce7'},
+  good:{label:'Good',symbol:'✓',color:'var(--good)',bg:'#ecfccb'},
+  inaccuracy:{label:'Inaccuracy ?!',symbol:'?!',color:'var(--inaccuracy)',bg:'#fef3c7'},
+  miss:{label:'Miss ✗',symbol:'✗',color:'var(--miss)',bg:'#ffedd5'},
+  blunder:{label:'Blunder ??',symbol:'??',color:'var(--blunder)',bg:'#fee2e2'},
+};
 
 let currentUsername='',allGames=[],filteredGames=[],currentGame=null;
 let chess=null,currentMoveIdx=0,moveHistory=[],flipped=false;
+let moveEvals=[]; // array of {eval, classification, bestMove} per move
+let stockfishWorker=null,sfReady=false;
+
+// ── Stockfish ─────────────────────────────────────────────
+function initStockfish(){
+  return new Promise((resolve)=>{
+    if(sfReady){resolve(true);return;}
+    try{
+      stockfishWorker=new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+      stockfishWorker.onmessage=function(e){
+        if(e.data==='uciok')stockfishWorker.postMessage('isready');
+        if(e.data==='readyok'){sfReady=true;resolve(true);}
+      };
+      stockfishWorker.onerror=()=>resolve(false);
+      stockfishWorker.postMessage('uci');
+    }catch(err){resolve(false);}
+  });
+}
+
+function evalFen(fen,depth){
+  return new Promise((resolve)=>{
+    if(!stockfishWorker||!sfReady){resolve({cp:0,mate:null,bestMove:null});return;}
+    let bestCp=0,bestMate=null,bestMove=null;
+    const handler=(e)=>{
+      const line=e.data;
+      const scoreMatch=line.match(/score (cp|mate) (-?\d+)/);
+      if(scoreMatch){
+        if(scoreMatch[1]==='cp')bestCp=parseInt(scoreMatch[2])/100;
+        else{bestMate=parseInt(scoreMatch[2]);}
+      }
+      const bmMatch=line.match(/^bestmove (\S+)/);
+      if(bmMatch){
+        bestMove=bmMatch[1]==='(none)'?null:bmMatch[1];
+        stockfishWorker.removeEventListener('message',handler);
+        resolve({cp:bestCp,mate:bestMate,bestMove});
+      }
+    };
+    stockfishWorker.addEventListener('message',handler);
+    stockfishWorker.postMessage('position fen '+fen);
+    stockfishWorker.postMessage('go depth '+(depth||14));
+  });
+}
+
+// ── Move classification ───────────────────────────────────
+function cpToWhite(cp,turn){
+  // Always return eval from white's perspective
+  return turn==='b'?-cp:cp;
+}
+
+function classifyMove(evalBefore,evalAfter,movePlayed,bestMove,turn,chess_before){
+  // evalBefore and evalAfter are from the perspective of the side that just moved
+  // Positive = good for the mover
+  const diff=evalAfter-evalBefore; // negative = lost advantage
+  const absDiff=Math.abs(diff);
+
+  // Check if move was a sacrifice (gave up material but eval improved)
+  const isSacrifice=detectSacrifice(movePlayed,chess_before);
+
+  // Check if it was the only winning/best move
+  const wasBestMove=movePlayed===bestMove;
+
+  if(isSacrifice&&diff>0.3)return 'brilliant';
+  if(wasBestMove&&absDiff<0.1)return 'best';
+  if(!wasBestMove&&absDiff<0.1&&diff>=-0.1)return 'good';
+  if(absDiff<0.3)return 'good';
+  if(absDiff<0.5)return 'inaccuracy';
+  if(absDiff<1.5)return 'miss';
+  return 'blunder';
+}
+
+function detectSacrifice(moveUci,chessBefore){
+  if(!moveUci||moveUci.length<4)return false;
+  const from=moveUci.slice(0,2);const to=moveUci.slice(2,4);
+  const piece=chessBefore.get(from);
+  const target=chessBefore.get(to);
+  if(!piece)return false;
+  const pieceVals={p:1,n:3,b:3,r:5,q:9,k:0};
+  const pieceVal=pieceVals[piece.type]||0;
+  const targetVal=target?pieceVals[target.type]||0:0;
+  return pieceVal>targetVal; // gave up more than captured
+}
+
+function calcAccuracy(evals){
+  if(!evals.length)return 0;
+  const weights={brilliant:100,great:100,best:100,good:90,inaccuracy:60,miss:30,blunder:0};
+  const sum=evals.reduce((a,e)=>a+(weights[e]||50),0);
+  return Math.round(sum/evals.length);
+}
+
+// ── Full game analysis ────────────────────────────────────
+async function runFullAnalysis(){
+  if(!currentGame)return;
+  const btn=document.getElementById('full-analysis-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Running...';
+  document.getElementById('analysis-progress').style.display='block';
+  document.getElementById('accuracy-summary').style.display='none';
+
+  const ok=await initStockfish();
+  if(!ok){
+    document.getElementById('analysis-status').textContent='Stockfish unavailable. Using AI-only analysis.';
+    await runAIOnlyAnalysis();
+    btn.disabled=false;btn.innerHTML='&#9881; Full analysis';
+    return;
+  }
+
+  const total=moveHistory.length;
+  moveEvals=new Array(total).fill(null);
+
+  // Evaluate each position
+  const tempChess=new Chess();
+  let prevEval=0;
+
+  for(let i=0;i<total;i++){
+    document.getElementById('analysis-bar').style.width=Math.round((i/total)*100)+'%';
+    document.getElementById('analysis-pct').textContent=Math.round((i/total)*100)+'%';
+    document.getElementById('analysis-status').textContent='Analyzing move '+(i+1)+' of '+total+': '+moveHistory[i].san;
+
+    const chessBefore=new Chess(tempChess.fen());
+    const evalBefore=await evalFen(tempChess.fen(),14);
+
+    tempChess.move(moveHistory[i].san);
+    const evalAfter=await evalFen(tempChess.fen(),14);
+
+    const turn=moveHistory[i].color; // 'w' or 'b'
+    // Eval from mover's perspective
+    const evBefore=turn==='w'?evalBefore.cp:-evalBefore.cp;
+    const evAfter=turn==='w'?-evalAfter.cp:evalAfter.cp; // after move, it's opponent's turn so flip
+
+    const classification=classifyMove(evBefore,evAfter,moveHistory[i].from+moveHistory[i].to,evalBefore.bestMove,turn,chessBefore);
+
+    moveEvals[i]={
+      evalWhite:cpToWhite(evalAfter.cp,evalAfter.mate?null:'w'),
+      cp:evalAfter.cp,
+      mate:evalAfter.mate,
+      bestMove:evalBefore.bestMove,
+      classification,
+      evBefore,evAfter
+    };
+    prevEval=evalAfter.cp;
+  }
+
+  document.getElementById('analysis-bar').style.width='100%';
+  document.getElementById('analysis-pct').textContent='100%';
+  document.getElementById('analysis-status').textContent='Complete!';
+  setTimeout(()=>document.getElementById('analysis-progress').style.display='none',1500);
+
+  renderMoveList();
+  showAccuracySummary();
+  updateEvalBar(moveEvals[total-1]?.evalWhite||0);
+  btn.disabled=false;btn.innerHTML='&#9881; Re-analyze';
+}
+
+async function runAIOnlyAnalysis(){
+  // Fallback: classify moves using simple heuristics without Stockfish
+  const tempChess=new Chess();
+  moveEvals=[];
+  for(let i=0;i<moveHistory.length;i++){
+    const flags=moveHistory[i].flags;
+    let cls='good';
+    if(flags&&flags.includes('c'))cls='good'; // capture
+    moveEvals.push({evalWhite:0,cp:0,mate:null,bestMove:null,classification:cls});
+    tempChess.move(moveHistory[i].san);
+  }
+  renderMoveList();
+}
+
+function showAccuracySummary(){
+  const whiteEvals=moveEvals.filter((_,i)=>i%2===0).map(e=>e.classification);
+  const blackEvals=moveEvals.filter((_,i)=>i%2===1).map(e=>e.classification);
+  const isWhite=isWhitePlayer(currentGame,currentUsername);
+  const myEvals=isWhite?whiteEvals:blackEvals;
+  const oppEvals=isWhite?blackEvals:whiteEvals;
+  const myAcc=calcAccuracy(myEvals);
+  const oppAcc=calcAccuracy(oppEvals);
+
+  // Count classifications
+  const countClasses=(evals)=>{
+    const counts={};
+    evals.forEach(e=>{counts[e]=(counts[e]||0)+1;});
+    return counts;
+  };
+  const myCounts=countClasses(myEvals);
+  const oppCounts=countClasses(oppEvals);
+  const myPlayer=isWhite?currentGame.white:currentGame.black;
+  const oppPlayer=isWhite?currentGame.black:currentGame.white;
+
+  // Update accuracy badges
+  const accColor=a=>a>=85?'background:#dcfce7;color:#166534':a>=70?'background:#fef3c7;color:#92400e':'background:#fee2e2;color:#991b1b';
+  const topIsBlack=flipped;
+  document.getElementById('top-accuracy').style.display='inline';
+  document.getElementById('top-accuracy').style.cssText='display:inline;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;'+(topIsBlack?accColor(oppAcc):accColor(myAcc));
+  document.getElementById('top-accuracy').textContent=(topIsBlack?oppAcc:myAcc)+'%';
+  document.getElementById('bottom-accuracy').style.display='inline';
+  document.getElementById('bottom-accuracy').style.cssText='display:inline;font-size:11px;font-weight:700;padding:2px 8px;border-radius:99px;'+(topIsBlack?accColor(myAcc):accColor(oppAcc));
+  document.getElementById('bottom-accuracy').textContent=(topIsBlack?myAcc:oppAcc)+'%';
+
+  // Summary card
+  const meter=document.getElementById('accuracy-meter');
+  meter.innerHTML='';
+  const addAcc=(name,acc,counts)=>{
+    const div=document.createElement('div');div.className='acc-item';
+    div.innerHTML='<div class="acc-val" style="color:'+(acc>=85?'var(--best)':acc>=70?'var(--inaccuracy)':'var(--blunder)')+'">'+acc+'%</div><div class="acc-lbl">'+name+'</div>';
+    meter.appendChild(div);
+    // Mini class breakdown
+    const breakdown=document.createElement('div');breakdown.style.cssText='font-size:10px;color:var(--text-muted);margin-top:4px';
+    ['brilliant','great','best','good','inaccuracy','miss','blunder'].forEach(cls=>{
+      if(counts[cls])breakdown.innerHTML+='<span style="color:'+CLASS_INFO[cls].color+';margin-right:4px">'+CLASS_INFO[cls].symbol+' '+counts[cls]+'</span>';
+    });
+    div.appendChild(breakdown);
+  };
+  addAcc(myPlayer.username,myAcc,myCounts);
+  addAcc(oppPlayer.username,oppAcc,oppCounts);
+
+  document.getElementById('accuracy-summary').style.display='block';
+}
+
+// ── Single move AI analysis ───────────────────────────────
+async function analyzeCurrentMove(){
+  if(!chess||currentMoveIdx===0)return;
+  const btn=document.getElementById('analyze-btn');
+  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analyzing...';
+  showTab('analysis',document.querySelectorAll('.tab-btn')[1]);
+
+  const move=moveHistory[currentMoveIdx-1];
+  const evalData=moveEvals[currentMoveIdx-1];
+  const classification=evalData?.classification||null;
+  const fen=chess.fen();
+  const inCheck=chess.in_check();
+
+  let systemPrompt='You are a chess coach explaining moves to a student. Be concise (2-3 sentences), specific, and educational. Mention piece names, squares, and tactical themes.';
+  let userPrompt='Position FEN: '+fen+'\nMove played: '+move.san+(move.color==='w'?' (White)':' (Black)')+'\nMove number: '+Math.ceil(currentMoveIdx/2);
+  if(evalData){
+    userPrompt+='\nEngine evaluation after move: '+(evalData.cp>=0?'+':'')+evalData.cp.toFixed(2);
+    if(evalData.bestMove&&evalData.bestMove!==move.from+move.to)userPrompt+='\nEngine best move was: '+evalData.bestMove;
+    if(classification)userPrompt+='\nMove classification: '+CLASS_INFO[classification]?.label;
+  }
+  if(inCheck)userPrompt+='\nThe king is now in check.';
+  userPrompt+='\n\nExplain this move: what was the idea behind it, is it good or bad, and what should the opponent watch out for?';
+
+  const el=document.getElementById('analysis-content');
+  el.innerHTML='<div class="ai-explanation"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
+
+  try{
+    const res=await fetch(EDGE_FN,{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      body:JSON.stringify({system:systemPrompt,messages:[{role:'user',content:userPrompt}]})
+    });
+    const data=await res.json();
+    const reply=data.reply||'Could not get analysis.';
+    let html='';
+    if(classification){
+      const ci=CLASS_INFO[classification];
+      html+='<div class="class-badge class-'+classification+'">'+ci.symbol+' '+ci.label+'</div><br>';
+    }
+    if(evalData&&evalData.cp!==undefined){
+      const score=evalData.cp;
+      html+='<div class="eval-score" style="color:'+(score>0.5?'var(--best)':score<-0.5?'var(--blunder)':'var(--text-muted)')+'">'+(score>=0?'+':'')+score.toFixed(2)+'</div>';
+    }
+    html+='<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Move '+currentMoveIdx+': '+move.san+'</div>';
+    html+='<div class="ai-explanation">'+reply+'</div>';
+    if(evalData?.bestMove&&evalData.bestMove!==move.from+move.to){
+      html+='<div class="best-move-box">&#9881; Engine best: <strong>'+evalData.bestMove+'</strong></div>';
+    }
+    el.innerHTML=html;
+  }catch(e){
+    el.innerHTML='<div class="ai-explanation">Connection error. Please try again.</div>';
+  }
+  btn.disabled=false;btn.innerHTML='&#9881; Analyze this move';
+}
 
 // ── Chess.com API ─────────────────────────────────────────
 async function loadProfile(){
@@ -254,9 +579,9 @@ function renderProfile(p,s){
   document.getElementById('profile-name').textContent=p.username;
   document.getElementById('profile-sub').textContent=(p.title?p.title+' | ':'')+( p.location||'Chess.com');
   const r=[];
-  if(s.chess_bullet)r.push('<span class="stat-pill">&#9889; Bullet '+s.chess_bullet.last.rating+'</span>');
-  if(s.chess_blitz)r.push('<span class="stat-pill">&#128293; Blitz '+s.chess_blitz.last.rating+'</span>');
-  if(s.chess_rapid)r.push('<span class="stat-pill">&#9201; Rapid '+s.chess_rapid.last.rating+'</span>');
+  if(s.chess_bullet)r.push('<span class="stat-pill">&#9889; '+s.chess_bullet.last.rating+'</span>');
+  if(s.chess_blitz)r.push('<span class="stat-pill">&#128293; '+s.chess_blitz.last.rating+'</span>');
+  if(s.chess_rapid)r.push('<span class="stat-pill">&#9201; '+s.chess_rapid.last.rating+'</span>');
   document.getElementById('profile-stats').innerHTML=r.join('');
 }
 
@@ -312,12 +637,10 @@ function renderGameList(){
     const div=document.createElement('div');
     div.className='game-item'+(currentGame===g?' selected':'');
     div.innerHTML='<div style="flex:1"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">'
-      +'<span style="font-size:11px;background:'+(isW?'#f0ece4':'#333')+';color:'+(isW?'#333':'#f0ece4')+';padding:1px 5px;border-radius:3px;font-weight:700;font-size:10px">'+(isW?'W':'B')+'</span>'
+      +'<span style="font-size:10px;background:'+(isW?'#f0ece4':'#333')+';color:'+(isW?'#333':'#f0ece4')+';padding:1px 5px;border-radius:3px;font-weight:700">'+(isW?'W':'B')+'</span>'
       +'<span style="font-size:13px;font-weight:600">'+opp.username+'</span>'
       +'<span style="font-size:12px;color:var(--text-muted)">('+opp.rating+')</span>'
-      +'</div>'
-      +'<div class="game-meta">'+tc.charAt(0).toUpperCase()+tc.slice(1)+' &middot; '+date+'</div>'
-      +'</div>'
+      +'</div><div class="game-meta">'+tc.charAt(0).toUpperCase()+tc.slice(1)+' &middot; '+date+'</div></div>'
       +'<span class="game-result result-'+result+'">'+result.charAt(0).toUpperCase()+result.slice(1)+'</span>';
     div.onclick=()=>openGame(g);
     el.appendChild(div);
@@ -328,90 +651,73 @@ function renderGameList(){
 function buildBoard(){
   const boardEl=document.getElementById('chess-board');
   boardEl.innerHTML='';
-  const size=Math.min(48,Math.floor((window.innerWidth-120)/8));
-  document.querySelectorAll('.sq').forEach(s=>s.style.width=size+'px');
+  const maxSize=Math.min(48,Math.floor((Math.min(window.innerWidth,500)-40)/8));
+  const sqSize=Math.max(32,maxSize);
   for(let r=0;r<8;r++){
     for(let f=0;f<8;f++){
+      const vRank=flipped?r:7-r;
+      const vFile=flipped?7-f:f;
+      const isLight=(vRank+vFile)%2===1;
       const sq=document.createElement('div');
-      const visualRank=flipped?r:7-r;
-      const visualFile=flipped?7-f:f;
-      const isLight=(visualRank+visualFile)%2===1;
       sq.className='sq '+(isLight?'light':'dark');
-      sq.style.width=size+'px';sq.style.height=size+'px';
-      sq.style.fontSize=Math.floor(size*0.72)+'px';
-      // coords
-      if(visualFile===0){const c=document.createElement('span');c.className='coord-rank';c.textContent=visualRank+1;sq.appendChild(c);}
-      if(visualRank===0){const c=document.createElement('span');c.className='coord-file';c.textContent='abcdefgh'[visualFile];sq.appendChild(c);}
-      const file='abcdefgh'[visualFile];
-      const rank=visualRank+1;
-      sq.dataset.sq=file+rank;
+      sq.style.width=sqSize+'px';sq.style.height=sqSize+'px';sq.style.fontSize=Math.floor(sqSize*0.7)+'px';
+      if(vFile===0){const c=document.createElement('span');c.className='coord-rank';c.textContent=vRank+1;sq.appendChild(c);}
+      if(vRank===0){const c=document.createElement('span');c.className='coord-file';c.textContent='abcdefgh'[vFile];sq.appendChild(c);}
+      sq.dataset.sq='abcdefgh'[vFile]+(vRank+1);
       boardEl.appendChild(sq);
     }
   }
-  // Set eval bar height
-  const barH=size*8;
-  document.getElementById('eval-bar').style.height=barH+'px';
+  document.getElementById('eval-bar').style.height=(sqSize*8)+'px';
   renderPieces();
 }
 
 function renderPieces(){
   if(!chess)return;
   document.querySelectorAll('.sq').forEach(sq=>{
-    // Remove old piece
     const old=sq.querySelector('.piece');if(old)old.remove();
-    const sqName=sq.dataset.sq;
-    const piece=chess.get(sqName);
-    if(piece){
-      const span=document.createElement('span');
-      span.className='piece';
-      const key=(piece.color==='w'?'w':'b')+piece.type.toUpperCase();
-      span.innerHTML=PIECES[key]||'?';
-      sq.appendChild(span);
-    }
+    const p=chess.get(sq.dataset.sq);
+    if(p){const span=document.createElement('span');span.className='piece';span.innerHTML=PIECES[(p.color==='w'?'w':'b')+p.type.toUpperCase()]||'?';sq.appendChild(span);}
   });
   highlightLastMove();
 }
 
 function highlightLastMove(){
-  document.querySelectorAll('.sq').forEach(s=>{s.classList.remove('last-from','last-to','check');});
+  document.querySelectorAll('.sq').forEach(s=>s.classList.remove('last-from','last-to','check'));
   if(currentMoveIdx>0){
     const m=moveHistory[currentMoveIdx-1];
-    const fromSq=document.querySelector('.sq[data-sq="'+m.from+'"]');
-    const toSq=document.querySelector('.sq[data-sq="'+m.to+'"]');
-    if(fromSq)fromSq.classList.add('last-from');
-    if(toSq)toSq.classList.add('last-to');
+    const f=document.querySelector('.sq[data-sq="'+m.from+'"]');
+    const t=document.querySelector('.sq[data-sq="'+m.to+'"]');
+    if(f)f.classList.add('last-from');if(t)t.classList.add('last-to');
   }
   if(chess.in_check()){
     const turn=chess.turn();
-    // Find king
-    for(let r=1;r<=8;r++){for(const f of 'abcdefgh'.split('')){const p=chess.get(f+r);if(p&&p.type==='k'&&p.color===turn){const sq=document.querySelector('.sq[data-sq="'+f+r+'"]');if(sq)sq.classList.add('check');}}}
+    for(let r=1;r<=8;r++)for(const f of 'abcdefgh'){const p=chess.get(f+r);if(p&&p.type==='k'&&p.color===turn){const sq=document.querySelector('.sq[data-sq="'+f+r+'"]');if(sq)sq.classList.add('check');}}
   }
 }
 
 function openGame(g){
-  currentGame=g;filterGames();
-  chess=new Chess();
-  chess.load_pgn(g.pgn);
+  currentGame=g;moveEvals=[];filterGames();
+  chess=new Chess();chess.load_pgn(g.pgn);
   moveHistory=chess.history({verbose:true});
-  currentMoveIdx=0;
-  chess.reset();
-  const isW=isWhitePlayer(g,currentUsername);
-  flipped=!isW;
-  // Player labels
-  const top=flipped?g.white:g.black;
-  const bottom=flipped?g.black:g.white;
+  currentMoveIdx=0;chess.reset();
+  const isW=isWhitePlayer(g,currentUsername);flipped=!isW;
+  const top=flipped?g.white:g.black;const bottom=flipped?g.black:g.white;
   document.getElementById('top-name').textContent=top.username;
   document.getElementById('top-rating').textContent=' ('+top.rating+')';
   document.getElementById('bottom-name').textContent=bottom.username;
   document.getElementById('bottom-rating').textContent=' ('+bottom.rating+')';
+  document.getElementById('top-accuracy').style.display='none';
+  document.getElementById('bottom-accuracy').style.display='none';
+  document.getElementById('accuracy-summary').style.display='none';
+  document.getElementById('analysis-progress').style.display='none';
   const result=getResult(g,currentUsername);
   document.getElementById('game-title').textContent=(isW?'White':'Black')+' vs '+getOpp(g,currentUsername).username+' — '+result;
-  buildBoard();
-  renderMoveList();
-  updateEvalBar(0);
+  buildBoard();renderMoveList();updateEvalBar(0);
+  document.getElementById('analysis-content').innerHTML='<div class="no-data">Click "Full analysis" to analyze all moves, or navigate and click "Analyze this move"</div>';
   document.getElementById('profile-section').style.display='none';
   document.getElementById('board-section').style.display='block';
-  document.getElementById('analysis-content').innerHTML='<div class="no-data">Navigate to a move then click Analyze</div>';
+  document.getElementById('full-analysis-btn').disabled=false;
+  document.getElementById('full-analysis-btn').innerHTML='&#9881; Full analysis';
 }
 
 function closeBoard(){
@@ -425,10 +731,15 @@ function goToMove(idx){
   currentMoveIdx=idx;
   chess.reset();
   for(let i=0;i<idx;i++)chess.move(moveHistory[i].san);
-  renderPieces();
-  renderMoveList();
+  renderPieces();renderMoveList();
+  // Update eval bar if we have analysis
+  if(moveEvals.length&&idx>0&&moveEvals[idx-1]){
+    updateEvalBar(moveEvals[idx-1].evalWhite||0);
+  } else if(idx===0){updateEvalBar(0);}
   const btn=document.getElementById('move-btn-'+(idx-1));
   if(btn)btn.scrollIntoView({block:'nearest'});
+  // Clear analysis panel
+  document.getElementById('analysis-content').innerHTML='<div class="no-data">Click "Analyze this move" for AI explanation</div>';
 }
 function prevMove(){goToMove(currentMoveIdx-1);}
 function nextMove(){goToMove(currentMoveIdx+1);}
@@ -440,56 +751,35 @@ function renderMoveList(){
     if(i%2===0){const n=document.createElement('span');n.className='move-num';n.textContent=(Math.floor(i/2)+1)+'.';el.appendChild(n);}
     const btn=document.createElement('button');
     btn.className='move-btn'+(i===currentMoveIdx-1?' active':'');
-    btn.textContent=m.san;btn.id='move-btn-'+i;
+    btn.id='move-btn-'+i;
+    const ev=moveEvals[i];
+    if(ev&&ev.classification&&i!==currentMoveIdx-1){
+      btn.className+=' '+ev.classification;
+      const ci=CLASS_INFO[ev.classification];
+      btn.textContent=m.san+' '+ci.symbol;
+      btn.style.color=ev.classification!=='best'&&ev.classification!=='good'&&ev.classification!=='brilliant'&&ev.classification!=='great'?ci.color:'';
+    } else {
+      btn.textContent=m.san;
+    }
     btn.onclick=()=>goToMove(i+1);
     el.appendChild(btn);
   });
 }
 
 function updateEvalBar(score){
-  const clamped=Math.max(-10,Math.min(10,score||0));
-  const blackPct=50-clamped*5;
-  const bp=Math.max(5,Math.min(95,blackPct));
+  const s=isNaN(score)?0:Math.max(-10,Math.min(10,score));
+  const bp=Math.max(5,Math.min(95,50-s*5));
   document.getElementById('eval-black').style.height=bp+'%';
   document.getElementById('eval-white').style.height=(100-bp)+'%';
   const n=document.getElementById('eval-num');
-  n.textContent=score>=0?'+'+parseFloat(score).toFixed(1):parseFloat(score).toFixed(1);
-  n.style.color=score>0.3?'var(--green)':score<-0.3?'#dc2626':'var(--text-muted)';
+  n.textContent=s>=0?'+'+s.toFixed(1):s.toFixed(1);
+  n.style.color=s>0.3?'var(--best)':s<-0.3?'var(--blunder)':'var(--text-muted)';
 }
 
 function showTab(tab,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');
   document.getElementById('tab-moves').style.display=tab==='moves'?'block':'none';
   document.getElementById('tab-analysis').style.display=tab==='analysis'?'block':'none';
-}
-
-// ── Analysis ─────────────────────────────────────────────
-async function analyzePosition(){
-  if(!chess)return;
-  const btn=document.getElementById('analyze-btn');
-  btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analyzing...';
-  showTab('analysis',document.querySelectorAll('.tab-btn')[1]);
-  const fen=chess.fen();
-  const moveDesc=currentMoveIdx>0?'Last move: '+moveHistory[currentMoveIdx-1].san+' (move '+currentMoveIdx+')':'Starting position.';
-  const isWhiteTurn=chess.turn()==='w';
-  const inCheck=chess.in_check();
-  const prompt='Chess position FEN: '+fen+'\n'+moveDesc+'\nIt is '+(isWhiteTurn?'White':'Black')+"'s turn to move."+(inCheck?' The king is in check.':'')+'\n\nIn 2-3 sentences explain: what the last move accomplished, what is the key strategic situation, and what the side to move should consider. Be specific — mention piece names, square names, and tactical themes like pins, forks, or open files.';
-  const el=document.getElementById('analysis-content');
-  el.innerHTML='<div class="ai-explanation"><div class="loading-dots"><span></span><span></span><span></span></div></div>';
-  try{
-    const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+OPENROUTER_KEY,'HTTP-Referer':'https://zerbydog.github.io','X-Title':'ChessReview'},
-      body:JSON.stringify({model:'poolside/laguna-m.1:free',messages:[{role:'user',content:prompt}]})
-    });
-    const data=await res.json();
-    const reply=data.choices?.[0]?.message?.content||data.error?.message||'Could not get analysis.';
-    const moveNum=currentMoveIdx>0?'<div style="font-size:12px;font-weight:600;color:var(--text-muted);margin-bottom:6px">Move '+currentMoveIdx+': '+moveHistory[currentMoveIdx-1].san+'</div>':'';
-    el.innerHTML=moveNum+'<div class="ai-explanation">'+reply+'</div>';
-  }catch(e){
-    el.innerHTML='<div class="ai-explanation">Connection error. Please try again.</div>';
-  }
-  btn.disabled=false;btn.innerHTML='&#9881; Analyze position';
 }
 
 function resetSearch(){
@@ -505,7 +795,6 @@ document.addEventListener('keydown',e=>{
   if(e.key==='ArrowLeft'){e.preventDefault();prevMove();}
   if(e.key==='ArrowRight'){e.preventDefault();nextMove();}
 });
-
 window.addEventListener('resize',()=>{if(currentGame)buildBoard();});
 </script>
 </body>
