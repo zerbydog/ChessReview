@@ -254,7 +254,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16.js"></script>
 <script>
 const SUPABASE_URL='https://rttwejkhzjjdnbzpwqtg.supabase.co';
 const SUPABASE_KEY='sb_publishable_0bIPDF8WlM5-rQEMvRiIHQ_wu84Buvc';
@@ -282,20 +282,47 @@ let sf=null,sfReady=false,sfMsgHandler=null;
 
 // ── Stockfish ─────────────────────────────────────────────
 function initStockfish(){
-  return new Promise((resolve)=>{
+  return new Promise(async(resolve)=>{
     if(sfReady){resolve(true);return;}
-    if(typeof Stockfish==='undefined'){resolve(false);return;}
+    // Try loading stockfish via blob worker from jsdelivr
     try{
-      sf=Stockfish();
-      sf.onmessage=function(line){
-        if(typeof line==='object')line=line.data;
-        if(line==='uciok')sf.postMessage('isready');
-        if(line==='readyok'){sfReady=true;resolve(true);}
-        if(sfMsgHandler)sfMsgHandler(line);
-      };
-      sf.postMessage('uci');
-      setTimeout(()=>{if(!sfReady)resolve(false);},8000);
-    }catch(e){console.log('SF error:',e);resolve(false);}
+      const urls=[
+        'https://cdn.jsdelivr.net/npm/stockfish@16.0.0/src/stockfish-nnue-16.js',
+        'https://cdn.jsdelivr.net/npm/stockfish.js@10.0.2/stockfish.js',
+        'https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js'
+      ];
+      let loaded=false;
+      for(const url of urls){
+        try{
+          const res=await fetch(url);
+          if(!res.ok)continue;
+          const text=await res.text();
+          const blob=new Blob([text],{type:'application/javascript'});
+          const blobUrl=URL.createObjectURL(blob);
+          const worker=new Worker(blobUrl);
+          await new Promise((res2,rej2)=>{
+            const t=setTimeout(()=>rej2('timeout'),6000);
+            worker.onmessage=(e)=>{
+              const d=typeof e.data==='object'?e.data.data||'':e.data;
+              if(d==='uciok')worker.postMessage('isready');
+              if(d==='readyok'){
+                clearTimeout(t);
+                sf=worker;
+                sf.onmessage=(e2)=>{
+                  const line=typeof e2.data==='object'?e2.data.data||'':e2.data;
+                  if(sfMsgHandler)sfMsgHandler(line);
+                };
+                sfReady=true;loaded=true;res2();
+              }
+            };
+            worker.onerror=()=>rej2('error');
+            worker.postMessage('uci');
+          });
+          if(loaded)break;
+        }catch(e){console.log('SF attempt failed:',e);continue;}
+      }
+      resolve(loaded);
+    }catch(e){console.log('SF all failed:',e);resolve(false);}
   });
 }
 
