@@ -282,17 +282,28 @@ let stockfishWorker=null,sfReady=false;
 
 // ── Stockfish ─────────────────────────────────────────────
 function initStockfish(){
-  return new Promise((resolve)=>{
+  return new Promise(async(resolve)=>{
     if(sfReady){resolve(true);return;}
     try{
-      stockfishWorker=new Worker('https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js');
+      // Fetch stockfish script and create blob worker to avoid CORS
+      const sfUrl='https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
+      const res=await fetch(sfUrl);
+      if(!res.ok)throw new Error('fetch failed');
+      const blob=await res.blob();
+      const blobUrl=URL.createObjectURL(blob);
+      stockfishWorker=new Worker(blobUrl);
       stockfishWorker.onmessage=function(e){
         if(e.data==='uciok')stockfishWorker.postMessage('isready');
         if(e.data==='readyok'){sfReady=true;resolve(true);}
       };
-      stockfishWorker.onerror=()=>resolve(false);
+      stockfishWorker.onerror=(err)=>{console.log('SF error:',err);resolve(false);};
       stockfishWorker.postMessage('uci');
-    }catch(err){resolve(false);}
+      // Timeout after 10s
+      setTimeout(()=>{if(!sfReady)resolve(false);},10000);
+    }catch(err){
+      console.log('Stockfish init failed:',err);
+      resolve(false);
+    }
   });
 }
 
@@ -374,13 +385,16 @@ async function runFullAnalysis(){
   document.getElementById('analysis-progress').style.display='block';
   document.getElementById('accuracy-summary').style.display='none';
 
+  document.getElementById('analysis-status').textContent='Loading Stockfish engine...';
   const ok=await initStockfish();
   if(!ok){
-    document.getElementById('analysis-status').textContent='Stockfish unavailable. Using AI-only analysis.';
-    await runAIOnlyAnalysis();
+    document.getElementById('analysis-progress').style.display='none';
+    document.getElementById('analysis-status').textContent='';
+    alert('Stockfish could not load. Try refreshing the page. If this keeps happening, your browser may be blocking the engine.');
     btn.disabled=false;btn.innerHTML='&#9881; Full analysis';
     return;
   }
+  document.getElementById('analysis-status').textContent='Engine ready. Analyzing...'
 
   const total=moveHistory.length;
   moveEvals=new Array(total).fill(null);
