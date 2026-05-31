@@ -329,7 +329,20 @@ function initStockfish(){
 function evalFen(fen,depth){
   return new Promise((resolve)=>{
     if(!sf||!sfReady){resolve({cp:0,mate:null,bestMove:null});return;}
+    // Check if position is terminal (checkmate/stalemate)
+    const tempC=new Chess(fen);
+    if(tempC.game_over()){
+      sfMsgHandler=null;
+      const cp=tempC.in_checkmate()?(tempC.turn()==='w'?-999:999):0;
+      resolve({cp,mate:tempC.in_checkmate()?(tempC.turn()==='w'?-1:1):null,bestMove:null});
+      return;
+    }
     let bestCp=0,bestMate=null,bestMove=null;
+    // Timeout after 8 seconds per move
+    const timeout=setTimeout(()=>{
+      sfMsgHandler=null;
+      resolve({cp:bestCp,mate:bestMate,bestMove});
+    },8000);
     sfMsgHandler=function(line){
       if(typeof line==='object')line=line.data||'';
       const scoreMatch=line.match(/score (cp|mate) (-?\d+)/);
@@ -339,6 +352,7 @@ function evalFen(fen,depth){
       }
       const bmMatch=line.match(/^bestmove (\S+)/);
       if(bmMatch){
+        clearTimeout(timeout);
         sfMsgHandler=null;
         bestMove=bmMatch[1]==='(none)'?null:bmMatch[1];
         resolve({cp:bestCp,mate:bestMate,bestMove});
@@ -427,10 +441,10 @@ async function runFullAnalysis(){
     document.getElementById('analysis-status').textContent='Analyzing move '+(i+1)+' of '+total+': '+moveHistory[i].san;
 
     const chessBefore=new Chess(tempChess.fen());
-    const evalBefore=await evalFen(tempChess.fen(),14);
+    const evalBefore=await evalFen(tempChess.fen(),12);
 
     tempChess.move(moveHistory[i].san);
-    const evalAfter=await evalFen(tempChess.fen(),14);
+    const evalAfter=await evalFen(tempChess.fen(),12);
 
     const turn=moveHistory[i].color; // 'w' or 'b'
     // Eval from mover's perspective
@@ -452,13 +466,15 @@ async function runFullAnalysis(){
 
   document.getElementById('analysis-bar').style.width='100%';
   document.getElementById('analysis-pct').textContent='100%';
-  document.getElementById('analysis-status').textContent='Complete!';
+  document.getElementById('analysis-status').textContent='Analysis complete!';
   setTimeout(()=>document.getElementById('analysis-progress').style.display='none',1500);
-
   renderMoveList();
   showAccuracySummary();
-  updateEvalBar(moveEvals[total-1]?.evalWhite||0);
+  const lastEval=moveEvals.filter(e=>e).slice(-1)[0];
+  if(lastEval)updateEvalBar(lastEval.evalWhite||0);
   btn.disabled=false;btn.innerHTML='&#9881; Re-analyze';
+  // Jump to move 1 to show first classification
+  goToMove(currentMoveIdx);
 }
 
 async function runAIOnlyAnalysis(){
