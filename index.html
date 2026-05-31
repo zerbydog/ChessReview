@@ -376,18 +376,19 @@ async function runFullAnalysis(){
     // Sacrifice detection: moved piece worth > captured + 1.5 pawns
     const isSac=detectSacrifice(moves[i].from+moves[i].to,new Chess(fens[i]));
 
-    // Classification — Chess.com style thresholds
+    // Classification thresholds in CENTIPAWNS (100cp = 1 pawn)
     let cls;
-    if(wasBest&&isSac&&moverGain>0.5) cls='brilliant';
-    else if(wasBest&&wpBefore<-200&&moverGain>150) cls='great'; // in centipawns now... wait we use pawns
+    if(wasBest&&isSac&&moverGain>50) cls='brilliant';       // sacrifice gaining 0.5+ pawns
+    else if(wasBest&&wpBefore<-200&&moverGain>150) cls='great'; // saving losing position
     else if(wasBest) cls='best';
-    else if(lossVsBest<0.1) cls='good';
-    else if(lossVsBest<0.5) cls='inaccuracy';
-    else if(lossVsBest<1.5) cls='miss';
-    else cls='blunder';
+    else if(lossVsBest<10) cls='good';          // within 0.1 pawns of best
+    else if(lossVsBest<50) cls='inaccuracy';    // 0.1-0.5 pawns worse than best
+    else if(lossVsBest<150) cls='miss';         // 0.5-1.5 pawns worse than best
+    else cls='blunder';                          // 1.5+ pawns worse than best
 
-    // Override: if position is roughly equal (|wpBefore|<0.3) and moverGain>0, always at least good
-    if(Math.abs(wpBefore)<30&&moverGain>=0&&cls==='blunder')cls='inaccuracy';
+    // Never call a move a blunder if the position was already equal/winning and moverGain >= 0
+    if(moverGain>=0&&cls==='blunder')cls='inaccuracy';
+    if(moverGain>=0&&cls==='miss')cls='inaccuracy';
 
     moveEvals.push({wpAfter,wpBefore,moverGain,lossVsBest,wasBest,isSac,cls,bestMove:evals[i].bestMove});
   }
@@ -465,12 +466,14 @@ function showMoveAnalysis(){
   }
   const ev=moveEvals[moveIdx-1];const m=moves[moveIdx-1];
   const ci=CLS[ev.cls];
+  const wpPawns=ev.wpAfter/100;
+  const lossPawns=ev.lossVsBest/100;
   let html='<div class="class-badge" style="background:'+ci.bg+';color:'+ci.c+'">'+ci.s+' '+ci.l+'</div><br>';
-  const evalStr=(ev.wpAfter/1).toFixed?((ev.wpAfter>0?'+':'')+ev.wpAfter.toFixed(2)):'?';
-  html+='<div class="eval-score-display" style="color:'+(ev.wpAfter>50?'#16a34a':ev.wpAfter<-50?'#dc2626':'#888')+'">'+evalStr+'</div>';
+  const evalStr=(wpPawns>=0?'+':'')+wpPawns.toFixed(2);
+  html+='<div class="eval-score-display" style="color:'+(ev.wpAfter>30?'#16a34a':ev.wpAfter<-30?'#dc2626':'#888')+'">'+evalStr+'</div>';
   html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Move '+moveIdx+': '+m.san;
   if(ev.wasBest)html+=' (best move)';
-  else if(ev.lossVsBest>0)html+=' (lost '+ev.lossVsBest.toFixed(2)+' vs best)';
+  else if(ev.lossVsBest>5)html+=' (lost '+lossPawns.toFixed(2)+' pawns vs best)';
   html+='</div>';
   if(!ev.wasBest&&ev.bestMove){
     html+='<div class="best-move-box">&#9881; Engine best: <strong>'+ev.bestMove+'</strong></div>';
@@ -492,10 +495,10 @@ async function explainMove(){
   const sys='You are a chess coach. Explain chess moves clearly in 2-3 sentences. Mention specific pieces, squares, and strategic or tactical ideas. Be direct and educational.';
   let prompt='FEN: '+fen+'\nMove '+moveIdx+': '+m.san+' ('+(m.color==='w'?'White':'Black')+')';
   if(ev){
-    prompt+='\nEval after move: '+(ev.wpAfter>0?'+':'')+ev.wpAfter.toFixed(2)+' (white perspective)';
+    prompt+='\nEval after move: '+(ev.wpAfter>0?'+':'')+(ev.wpAfter/100).toFixed(2)+' pawns (positive=white winning)';
     if(ev.cls)prompt+='\nClassification: '+CLS[ev.cls].l;
     if(!ev.wasBest&&ev.bestMove)prompt+='\nEngine best was: '+ev.bestMove;
-    prompt+='\nLoss vs best move: '+ev.lossVsBest.toFixed(2)+' pawns';
+    if(ev.lossVsBest>5)prompt+='\nLoss vs best move: '+(ev.lossVsBest/100).toFixed(2)+' pawns';
   }
   if(chess.in_check())prompt+='\nKing is in check after this move.';
   prompt+='\n\nExplain what this move does, why it is '+( ev?CLS[ev.cls].l:'notable')+', and what both sides should consider next.';
@@ -710,7 +713,7 @@ function updateEvalBar(wp){
   document.getElementById('eval-black').style.height=bp+'%';
   document.getElementById('eval-white').style.height=(100-bp)+'%';
   const n=document.getElementById('eval-num');
-  const display=Math.abs(s)>=900?'#':(s>=0?'+':'')+( s/100).toFixed(1);
+  const display=Math.abs(s)>=900?'M':(s>=0?'+':'')+(s/100).toFixed(1);
   n.textContent=display;
   n.style.color=s>30?'#16a34a':s<-30?'#dc2626':'#888';
 }
