@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -516,18 +517,23 @@ async function runFullAnalysis(){
     const isSacrifice=detectSacrifice(playedMove,chessBefore);
 
     let classification;
-    if(isSacrifice && moverDelta>0.3 && wasBestMove) classification='brilliant';
-    else if(wasBestMove && wpBefore<-1.5 && moverDelta>1.0) classification='great';
+    // Use Chess.com-style thresholds based on loss vs engine best
+    if(isSacrifice && moverDelta>0.5 && wasBestMove) classification='brilliant';
+    else if(wasBestMove && wpBefore<-2.0 && moverDelta>1.5) classification='great';
     else if(wasBestMove) classification='best';
-    else if(lossVsBest<=0.1) classification='good';
-    else if(lossVsBest<=0.5) classification='inaccuracy';
-    else if(lossVsBest<=1.5) classification='miss';
+    else if(lossVsBest===0||lossVsBest<0.1) classification='good';
+    else if(lossVsBest<0.3) classification='good';
+    else if(lossVsBest<0.8) classification='inaccuracy';
+    else if(lossVsBest<2.0) classification='miss';
     else classification='blunder';
 
+    // Sanity check: in equal positions wpAfter should be near 0
+    // Clamp extreme evals that indicate engine instability
+    const clampedWp=Math.max(-20,Math.min(20,wpAfter));
     moveEvals[i]={
-      evalWhite:wpAfter,
+      evalWhite:clampedWp,
       wpBefore,
-      wpAfter,
+      wpAfter:clampedWp,
       moverDelta,
       lossVsBest,
       cp:evAfter.cp,
@@ -651,8 +657,14 @@ async function analyzeCurrentMove(){
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
       body:JSON.stringify({system:systemPrompt,messages:[{role:'user',content:userPrompt}]})
     });
+    if(!res.ok){
+      const errText=await res.text();
+      console.log('Edge fn error:',res.status,errText);
+      throw new Error('Edge function returned '+res.status);
+    }
     const data=await res.json();
-    const reply=data.reply||'Could not get analysis.';
+    console.log('AI response:',data);
+    const reply=data.reply||data.error||'Could not get analysis.';
     let html='';
     if(classification){
       const ci=CLASS_INFO[classification];
@@ -865,7 +877,11 @@ function goToMove(idx){
   for(let i=0;i<idx;i++)chess.move(moveHistory[i].san);
   renderPieces();renderMoveList();
   if(moveEvals.length&&idx>0&&moveEvals[idx-1]){
-    updateEvalBar(moveEvals[idx-1].evalWhite||0);
+    // Use wpBefore of NEXT move (= wpAfter of this move) for display
+    // but fall back to wpBefore if wpAfter looks unstable
+    const evDisp=moveEvals[idx-1];
+    const displayEval=evDisp.evalWhite;
+    updateEvalBar(displayEval||0);
     // Auto show classification info in analysis panel
     const ev=moveEvals[idx-1];
     const ci=CLASS_INFO[ev.classification];
