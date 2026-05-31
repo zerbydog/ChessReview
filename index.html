@@ -431,37 +431,49 @@ async function runFullAnalysis(){
   const total=moveHistory.length;
   moveEvals=new Array(total).fill(null);
 
-  // Evaluate each position
+  // Collect all positions first, then evaluate each
   const tempChess=new Chess();
-  let prevEval=0;
-
+  const positions=[];
+  // Position before move 0 = starting position
+  positions.push(tempChess.fen());
   for(let i=0;i<total;i++){
-    document.getElementById('analysis-bar').style.width=Math.round((i/total)*100)+'%';
-    document.getElementById('analysis-pct').textContent=Math.round((i/total)*100)+'%';
-    document.getElementById('analysis-status').textContent='Analyzing move '+(i+1)+' of '+total+': '+moveHistory[i].san;
-
-    const chessBefore=new Chess(tempChess.fen());
-    const evalBefore=await evalFen(tempChess.fen(),12);
-
     tempChess.move(moveHistory[i].san);
-    const evalAfter=await evalFen(tempChess.fen(),12);
+    positions.push(tempChess.fen());
+  }
 
-    const turn=moveHistory[i].color; // 'w' or 'b'
-    // Eval from mover's perspective
-    const evBefore=turn==='w'?evalBefore.cp:-evalBefore.cp;
-    const evAfter=turn==='w'?-evalAfter.cp:evalAfter.cp; // after move, it's opponent's turn so flip
+  // Evaluate all positions (one eval per position, not two per move)
+  const evals=new Array(positions.length).fill(null);
+  for(let i=0;i<positions.length;i++){
+    document.getElementById('analysis-bar').style.width=Math.round((i/positions.length)*100)+'%';
+    document.getElementById('analysis-pct').textContent=Math.round((i/positions.length)*100)+'%';
+    if(i===0){
+      document.getElementById('analysis-status').textContent='Evaluating starting position...';
+    } else {
+      document.getElementById('analysis-status').textContent='Analyzing move '+i+' of '+total+': '+moveHistory[i-1].san;
+    }
+    evals[i]=await evalFen(positions[i],12);
+    // Small yield to keep UI responsive
+    await new Promise(r=>setTimeout(r,0));
+  }
 
-    const classification=classifyMove(evBefore,evAfter,moveHistory[i].from+moveHistory[i].to,evalBefore.bestMove,turn,chessBefore);
-
+  // Classify each move using before/after evals
+  for(let i=0;i<total;i++){
+    const evBefore=evals[i];
+    const evAfter=evals[i+1];
+    const turn=moveHistory[i].color;
+    const cpBefore=turn==='w'?evBefore.cp:-evBefore.cp;
+    const cpAfter=turn==='w'?-evAfter.cp:evAfter.cp;
+    const chessBefore=new Chess(positions[i]);
+    const classification=classifyMove(cpBefore,cpAfter,moveHistory[i].from+moveHistory[i].to,evBefore.bestMove,turn,chessBefore);
     moveEvals[i]={
-      evalWhite:cpToWhite(evalAfter.cp,evalAfter.mate?null:'w'),
-      cp:evalAfter.cp,
-      mate:evalAfter.mate,
-      bestMove:evalBefore.bestMove,
+      evalWhite:evAfter.cp,
+      cp:evAfter.cp,
+      mate:evAfter.mate,
+      bestMove:evBefore.bestMove,
       classification,
-      evBefore,evAfter
+      evBefore:cpBefore,
+      evAfter:cpAfter
     };
-    prevEval=evalAfter.cp;
   }
 
   document.getElementById('analysis-bar').style.width='100%';
