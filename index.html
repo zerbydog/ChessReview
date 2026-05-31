@@ -447,73 +447,94 @@ async function runFullAnalysis(){
     positions.push(tempChess.fen());
   }
 
-  // Evaluate all positions (one eval per position, not two per move)
+  // Evaluate all positions sequentially
+  // positions[0] = start, positions[i] = after move i-1
   const evals=new Array(positions.length).fill(null);
   for(let i=0;i<positions.length;i++){
-    document.getElementById('analysis-bar').style.width=Math.round((i/positions.length)*100)+'%';
-    document.getElementById('analysis-pct').textContent=Math.round((i/positions.length)*100)+'%';
-    if(i===0){
-      document.getElementById('analysis-status').textContent='Evaluating starting position...';
-    } else {
-      document.getElementById('analysis-status').textContent='Analyzing move '+i+' of '+total+': '+moveHistory[i-1].san;
-    }
-    evals[i]=await evalFen(positions[i],12);
-    // Small yield to keep UI responsive
+    const pct=Math.round((i/positions.length)*100);
+    document.getElementById('analysis-bar').style.width=pct+'%';
+    document.getElementById('analysis-pct').textContent=pct+'%';
+    document.getElementById('analysis-status').textContent=i===0?'Evaluating start...':'Analyzing move '+i+'/'+total+': '+moveHistory[i-1].san;
+    evals[i]=await evalFen(positions[i],14);
     await new Promise(r=>setTimeout(r,0));
   }
 
-  // Classify each move using before/after evals
-  // All evals stored as white-perspective (positive = white winning)
+  // Now also evaluate what the best move would have given (for accurate loss calculation)
+  // For each move, we want: loss = eval(best_move_played) - eval(actual_move_played)
+  // eval(best_move_played) = we need to play bestMove and evaluate resulting position
+  // This is expensive so we do it only when the played move != best move
+  const bestMoveEvals=new Array(total).fill(null);
   for(let i=0;i<total;i++){
     const evBefore=evals[i];
-    const evAfter=evals[i+1];
-    const turn=moveHistory[i].color; // 'w' or 'b'
+    if(!evBefore.bestMove)continue;
+    const playedMove=moveHistory[i].from+moveHistory[i].to+(moveHistory[i].promotion||'');
+    const bestUci=evBefore.bestMove;
+    if(bestUci===playedMove)continue; // played best, no need to eval
+    // Play best move on a temp board
+    const tempB=new Chess(positions[i]);
+    // Convert UCI to chess.js format
+    const bmFrom=bestUci.slice(0,2),bmTo=bestUci.slice(2,4),bmProm=bestUci.slice(4)||undefined;
+    const moved=tempB.move({from:bmFrom,to:bmTo,promotion:bmProm||'q'});
+    if(!moved)continue;
+    const pct=Math.round(((positions.length+i)/( positions.length+total))*100);
+    document.getElementById('analysis-bar').style.width=Math.min(99,pct)+'%';
+    document.getElementById('analysis-status').textContent='Calibrating move '+(i+1)+'...';
+    bestMoveEvals[i]=await evalFen(tempB.fen(),14);
+    await new Promise(r=>setTimeout(r,0));
+  }
 
-    // Stockfish eval is ALWAYS from the side to move's perspective
-    // evBefore.cp = eval before move, from mover's perspective (positive = mover is winning)
-    // evAfter.cp = eval after move, from OPPONENT's perspective (positive = opponent is winning)
-    // So: how much did the mover gain = evBefore.cp - evAfter.cp
-    // (if before=+0.5 for mover, after=-0.3 for opponent meaning +0.3 for mover, delta = 0.5-0.3 = gained 0.2? no)
-    // Simpler: convert everything to white-perspective first
-    // evBefore from mover perspective -> white perspective:
-    const wpBefore = turn==='w' ? evBefore.cp : -evBefore.cp;
-    // evAfter from opponent perspective -> white perspective:
-    const wpAfter = turn==='w' ? -evAfter.cp : evAfter.cp;
-    // Change in white eval (positive = white gained, negative = black gained)
-    const whiteGain = wpAfter - wpBefore;
-    // Change from mover's perspective (positive = mover played well)
-    const delta = turn==='w' ? whiteGain : -whiteGain;
+  // Classify each move
+  for(let i=0;i<total;i++){
+    const evBefore=evals[i];   // eval BEFORE this move (from mover's POV, Stockfish reports from side-to-move)
+    const evAfter=evals[i+1];  // eval AFTER this move (from OPPONENT's POV)
+    const turn=moveHistory[i].color;
+
+    // Convert to white-perspective centipawns
+    // Before move: turn is about to move. evBefore.cp is from that turn's perspective.
+    const wpBefore=turn==='w' ? evBefore.cp : -evBefore.cp;
+    // After move: opponent is now to move. evAfter.cp is from opponent's perspective.
+    const wpAfter=turn==='w' ? -evAfter.cp : evAfter.cp;
+
+    // White-perspective change (positive = white improved)
+    const wpDelta=wpAfter-wpBefore;
+    // Mover-perspective change (positive = mover improved their position)
+    const moverDelta=turn==='w' ? wpDelta : -wpDelta;
+
+    // Loss vs best move (how much worse than best)
+    let lossVsBest=0;
+    const playedMove=moveHistory[i].from+moveHistory[i].to;
+    const wasBestMove=!!(evBefore.bestMove&&playedMove===evBefore.bestMove);
+
+    if(!wasBestMove && bestMoveEvals[i]){
+      // bestMoveEvals[i].cp is from opponent's POV after best move
+      const wpBestAfter=turn==='w' ? -bestMoveEvals[i].cp : bestMoveEvals[i].cp;
+      const bestDelta=turn==='w' ? (wpBestAfter-wpBefore) : -(wpBestAfter-wpBefore);
+      lossVsBest=bestDelta-moverDelta; // how much worse we did vs best (positive = we lost vs best)
+    }
 
     const chessBefore=new Chess(positions[i]);
-    const isSacrifice=detectSacrifice(moveHistory[i].from+moveHistory[i].to,chessBefore);
-    const wasBestMove=!!(evBefore.bestMove&&(moveHistory[i].from+moveHistory[i].to)===evBefore.bestMove);
-    const absDelta=Math.abs(delta);
+    const isSacrifice=detectSacrifice(playedMove,chessBefore);
 
     let classification;
-    // Brilliant: sacrifice that actually gains advantage
-    if(isSacrifice && delta > 0.3) classification='brilliant';
-    // Great: only move that saves/wins, very hard to find
-    else if(wasBestMove && wpBefore < -1.0 && delta > 0.8) classification='great';
-    // Best: matches engine top move
-    else if(wasBestMove && delta > -0.2) classification='best';
-    // Good: close to best
-    else if(delta >= -0.2) classification='good';
-    // Inaccuracy: small loss
-    else if(delta >= -0.5) classification='inaccuracy';
-    // Miss: medium loss
-    else if(delta >= -1.5) classification='miss';
-    // Blunder: large loss
+    if(isSacrifice && moverDelta>0.3 && wasBestMove) classification='brilliant';
+    else if(wasBestMove && wpBefore<-1.5 && moverDelta>1.0) classification='great';
+    else if(wasBestMove) classification='best';
+    else if(lossVsBest<=0.1) classification='good';
+    else if(lossVsBest<=0.5) classification='inaccuracy';
+    else if(lossVsBest<=1.5) classification='miss';
     else classification='blunder';
 
     moveEvals[i]={
-      evalWhite:evAfter.cp,
+      evalWhite:wpAfter,
+      wpBefore,
+      wpAfter,
+      moverDelta,
+      lossVsBest,
       cp:evAfter.cp,
       mate:evAfter.mate,
       bestMove:evBefore.bestMove,
       classification,
-      delta,
-      cpBeforeMover,
-      cpAfterMover
+      wasBestMove
     };
   }
 
@@ -851,7 +872,7 @@ function goToMove(idx){
     const move=moveHistory[idx-1];
     let html='<div class="class-badge class-'+ev.classification+'">'+ci.symbol+' '+ci.label+'</div><br>';
     html+='<div class="eval-score" style="color:'+(ev.evalWhite>0.5?'var(--best)':ev.evalWhite<-0.5?'var(--blunder)':'var(--text-muted)')+'">'+(ev.evalWhite>=0?'+':'')+ev.evalWhite.toFixed(2)+'</div>';
-    html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Move '+idx+': '+move.san+(ev.delta!==undefined?' ('+( ev.delta>=0?'+':'')+ev.delta.toFixed(2)+' for '+(move.color==='w'?'White':'Black')+')'  :'')+'</div>';
+    const lossStr=ev.lossVsBest>0.05?' (lost '+ev.lossVsBest.toFixed(2)+' vs best)':ev.wasBestMove?' (best move)':'';html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Move '+idx+': '+move.san+lossStr+'</div>';
     if(ev.bestMove&&ev.bestMove!==move.from+move.to){
       html+='<div class="best-move-box" style="margin-bottom:8px">&#9881; Engine best: <strong>'+ev.bestMove+'</strong></div>';
     }
