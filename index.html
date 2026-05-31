@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -255,6 +254,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js"></script>
 <script>
 const SUPABASE_URL='https://rttwejkhzjjdnbzpwqtg.supabase.co';
 const SUPABASE_KEY='sb_publishable_0bIPDF8WlM5-rQEMvRiIHQ_wu84Buvc';
@@ -277,57 +277,48 @@ const CLASS_INFO={
 
 let currentUsername='',allGames=[],filteredGames=[],currentGame=null;
 let chess=null,currentMoveIdx=0,moveHistory=[],flipped=false;
-let moveEvals=[]; // array of {eval, classification, bestMove} per move
-let stockfishWorker=null,sfReady=false;
+let moveEvals=[];
+let sf=null,sfReady=false,sfMsgHandler=null;
 
 // ── Stockfish ─────────────────────────────────────────────
 function initStockfish(){
-  return new Promise(async(resolve)=>{
+  return new Promise((resolve)=>{
     if(sfReady){resolve(true);return;}
+    if(typeof Stockfish==='undefined'){resolve(false);return;}
     try{
-      // Fetch stockfish script and create blob worker to avoid CORS
-      const sfUrl='https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js';
-      const res=await fetch(sfUrl);
-      if(!res.ok)throw new Error('fetch failed');
-      const blob=await res.blob();
-      const blobUrl=URL.createObjectURL(blob);
-      stockfishWorker=new Worker(blobUrl);
-      stockfishWorker.onmessage=function(e){
-        if(e.data==='uciok')stockfishWorker.postMessage('isready');
-        if(e.data==='readyok'){sfReady=true;resolve(true);}
+      sf=Stockfish();
+      sf.onmessage=function(line){
+        if(typeof line==='object')line=line.data;
+        if(line==='uciok')sf.postMessage('isready');
+        if(line==='readyok'){sfReady=true;resolve(true);}
+        if(sfMsgHandler)sfMsgHandler(line);
       };
-      stockfishWorker.onerror=(err)=>{console.log('SF error:',err);resolve(false);};
-      stockfishWorker.postMessage('uci');
-      // Timeout after 10s
-      setTimeout(()=>{if(!sfReady)resolve(false);},10000);
-    }catch(err){
-      console.log('Stockfish init failed:',err);
-      resolve(false);
-    }
+      sf.postMessage('uci');
+      setTimeout(()=>{if(!sfReady)resolve(false);},8000);
+    }catch(e){console.log('SF error:',e);resolve(false);}
   });
 }
 
 function evalFen(fen,depth){
   return new Promise((resolve)=>{
-    if(!stockfishWorker||!sfReady){resolve({cp:0,mate:null,bestMove:null});return;}
+    if(!sf||!sfReady){resolve({cp:0,mate:null,bestMove:null});return;}
     let bestCp=0,bestMate=null,bestMove=null;
-    const handler=(e)=>{
-      const line=e.data;
+    sfMsgHandler=function(line){
+      if(typeof line==='object')line=line.data||'';
       const scoreMatch=line.match(/score (cp|mate) (-?\d+)/);
       if(scoreMatch){
         if(scoreMatch[1]==='cp')bestCp=parseInt(scoreMatch[2])/100;
-        else{bestMate=parseInt(scoreMatch[2]);}
+        else bestMate=parseInt(scoreMatch[2]);
       }
       const bmMatch=line.match(/^bestmove (\S+)/);
       if(bmMatch){
+        sfMsgHandler=null;
         bestMove=bmMatch[1]==='(none)'?null:bmMatch[1];
-        stockfishWorker.removeEventListener('message',handler);
         resolve({cp:bestCp,mate:bestMate,bestMove});
       }
     };
-    stockfishWorker.addEventListener('message',handler);
-    stockfishWorker.postMessage('position fen '+fen);
-    stockfishWorker.postMessage('go depth '+(depth||14));
+    sf.postMessage('position fen '+fen);
+    sf.postMessage('go depth '+(depth||14));
   });
 }
 
