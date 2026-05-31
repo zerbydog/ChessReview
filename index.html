@@ -240,7 +240,11 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           </div>
           <div id="tab-analysis" style="display:none">
             <div id="analysis-content"><div class="no-data">Run full analysis or navigate to a move and click Analyze</div></div>
-            <button class="green-btn" id="analyze-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;margin-top:8px;font-size:12px">&#9881; Explain this move</button>
+            <div style="display:flex;gap:6px;margin-top:8px">
+              <button class="ctrl-btn" onclick="prevMove();analyzeCurrentMove()" title="Prev move + explain">&#8592;</button>
+              <button class="green-btn" id="analyze-btn" onclick="analyzeCurrentMove()" style="flex:1;justify-content:center;font-size:12px">&#9881; Explain this move</button>
+              <button class="ctrl-btn" onclick="nextMove();analyzeCurrentMove()" title="Next move + explain">&#8594;</button>
+            </div>
           </div>
         </div>
       </div>
@@ -396,10 +400,12 @@ function detectSacrifice(moveUci,chessBefore){
   const piece=chessBefore.get(from);
   const target=chessBefore.get(to);
   if(!piece)return false;
-  const pieceVals={p:1,n:3,b:3,r:5,q:9,k:0};
-  const pieceVal=pieceVals[piece.type]||0;
-  const targetVal=target?pieceVals[target.type]||0:0;
-  return pieceVal>targetVal; // gave up more than captured
+  const pieceVals={p:1,n:3,b:3.5,r:5,q:9,k:0};
+  const movingVal=pieceVals[piece.type]||0;
+  const captureVal=target?pieceVals[target.type]||0:0;
+  // Sacrifice: moving a piece worth more than what's being captured (or moving into undefended square)
+  // Only flag as potential sacrifice if piece value difference is significant
+  return movingVal > captureVal + 1.5;
 }
 
 function calcAccuracy(evals){
@@ -463,29 +469,41 @@ async function runFullAnalysis(){
     const evAfter=evals[i+1];
     const turn=moveHistory[i].color; // 'w' or 'b'
 
-    // Convert both evals to the mover's perspective
-    // White: positive cp = good for white (mover). Black: negative cp = good for black (mover)
-    const cpBeforeMover=turn==='w'?evBefore.cp:-evBefore.cp;
-    const cpAfterMover=turn==='w'?evAfter.cp:-evAfter.cp;
-
-    // How much the mover gained/lost (positive = gained advantage)
-    const delta=cpAfterMover-cpBeforeMover;
+    // Stockfish eval is ALWAYS from the side to move's perspective
+    // evBefore.cp = eval before move, from mover's perspective (positive = mover is winning)
+    // evAfter.cp = eval after move, from OPPONENT's perspective (positive = opponent is winning)
+    // So: how much did the mover gain = evBefore.cp - evAfter.cp
+    // (if before=+0.5 for mover, after=-0.3 for opponent meaning +0.3 for mover, delta = 0.5-0.3 = gained 0.2? no)
+    // Simpler: convert everything to white-perspective first
+    // evBefore from mover perspective -> white perspective:
+    const wpBefore = turn==='w' ? evBefore.cp : -evBefore.cp;
+    // evAfter from opponent perspective -> white perspective:
+    const wpAfter = turn==='w' ? -evAfter.cp : evAfter.cp;
+    // Change in white eval (positive = white gained, negative = black gained)
+    const whiteGain = wpAfter - wpBefore;
+    // Change from mover's perspective (positive = mover played well)
+    const delta = turn==='w' ? whiteGain : -whiteGain;
 
     const chessBefore=new Chess(positions[i]);
     const isSacrifice=detectSacrifice(moveHistory[i].from+moveHistory[i].to,chessBefore);
+    const wasBestMove=!!(evBefore.bestMove&&(moveHistory[i].from+moveHistory[i].to)===evBefore.bestMove);
+    const absDelta=Math.abs(delta);
 
     let classification;
-    const wasBestMove=(evBefore.bestMove&&(moveHistory[i].from+moveHistory[i].to)===evBefore.bestMove);
-
-    if(isSacrifice&&delta>0.5)classification='brilliant';
-    else if(wasBestMove&&delta>-0.15)classification='best';
-    else if(delta>=-0.15)classification='good';
-    else if(delta>=-0.4)classification='inaccuracy';
-    else if(delta>=-1.0)classification='miss';
+    // Brilliant: sacrifice that actually gains advantage
+    if(isSacrifice && delta > 0.3) classification='brilliant';
+    // Great: only move that saves/wins, very hard to find
+    else if(wasBestMove && wpBefore < -1.0 && delta > 0.8) classification='great';
+    // Best: matches engine top move
+    else if(wasBestMove && delta > -0.2) classification='best';
+    // Good: close to best
+    else if(delta >= -0.2) classification='good';
+    // Inaccuracy: small loss
+    else if(delta >= -0.5) classification='inaccuracy';
+    // Miss: medium loss
+    else if(delta >= -1.5) classification='miss';
+    // Blunder: large loss
     else classification='blunder';
-
-    // Special: if only one move doesn't lose, it's "great"
-    if(wasBestMove&&cpBeforeMover<-1.5&&delta>1.0)classification='great';
 
     moveEvals[i]={
       evalWhite:evAfter.cp,
@@ -578,7 +596,11 @@ function showAccuracySummary(){
 
 // ── Single move AI analysis ───────────────────────────────
 async function analyzeCurrentMove(){
-  if(!chess||currentMoveIdx===0)return;
+  if(!chess)return;
+  if(currentMoveIdx===0){
+    document.getElementById('analysis-content').innerHTML='<div class="no-data">Navigate to a move first</div>';
+    return;
+  }
   const btn=document.getElementById('analyze-btn');
   btn.disabled=true;btn.innerHTML='<span class="spin"></span> Analyzing...';
   showTab('analysis',document.querySelectorAll('.tab-btn')[1]);
@@ -835,8 +857,9 @@ function goToMove(idx){
     }
     html+='<div id="ai-move-explanation"><button class="green-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;font-size:12px">&#9881; Explain this move</button></div>';
     document.getElementById('analysis-content').innerHTML=html;
-    // Auto-explain blunders and brilliant moves
-    if(['blunder','miss','brilliant'].includes(ev.classification)){
+    // Auto-explain blunders and brilliant moves - switch to analysis tab
+    if(['blunder','miss','brilliant','great'].includes(ev.classification)){
+      showTab('analysis',document.querySelectorAll('.tab-btn')[1]);
       analyzeCurrentMove();
     }
   } else if(idx===0){
