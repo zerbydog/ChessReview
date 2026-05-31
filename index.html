@@ -240,7 +240,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
           </div>
           <div id="tab-analysis" style="display:none">
             <div id="analysis-content"><div class="no-data">Run full analysis or navigate to a move and click Analyze</div></div>
-            <button class="green-btn" id="analyze-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;margin-top:8px;font-size:12px">&#9881; Analyze this move</button>
+            <button class="green-btn" id="analyze-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;margin-top:8px;font-size:12px">&#9881; Explain this move</button>
           </div>
         </div>
       </div>
@@ -457,22 +457,45 @@ async function runFullAnalysis(){
   }
 
   // Classify each move using before/after evals
+  // All evals stored as white-perspective (positive = white winning)
   for(let i=0;i<total;i++){
     const evBefore=evals[i];
     const evAfter=evals[i+1];
-    const turn=moveHistory[i].color;
-    const cpBefore=turn==='w'?evBefore.cp:-evBefore.cp;
-    const cpAfter=turn==='w'?-evAfter.cp:evAfter.cp;
+    const turn=moveHistory[i].color; // 'w' or 'b'
+
+    // Convert both evals to the mover's perspective
+    // White: positive cp = good for white (mover). Black: negative cp = good for black (mover)
+    const cpBeforeMover=turn==='w'?evBefore.cp:-evBefore.cp;
+    const cpAfterMover=turn==='w'?evAfter.cp:-evAfter.cp;
+
+    // How much the mover gained/lost (positive = gained advantage)
+    const delta=cpAfterMover-cpBeforeMover;
+
     const chessBefore=new Chess(positions[i]);
-    const classification=classifyMove(cpBefore,cpAfter,moveHistory[i].from+moveHistory[i].to,evBefore.bestMove,turn,chessBefore);
+    const isSacrifice=detectSacrifice(moveHistory[i].from+moveHistory[i].to,chessBefore);
+
+    let classification;
+    const wasBestMove=(evBefore.bestMove&&(moveHistory[i].from+moveHistory[i].to)===evBefore.bestMove);
+
+    if(isSacrifice&&delta>0.5)classification='brilliant';
+    else if(wasBestMove&&delta>-0.15)classification='best';
+    else if(delta>=-0.15)classification='good';
+    else if(delta>=-0.4)classification='inaccuracy';
+    else if(delta>=-1.0)classification='miss';
+    else classification='blunder';
+
+    // Special: if only one move doesn't lose, it's "great"
+    if(wasBestMove&&cpBeforeMover<-1.5&&delta>1.0)classification='great';
+
     moveEvals[i]={
       evalWhite:evAfter.cp,
       cp:evAfter.cp,
       mate:evAfter.mate,
       bestMove:evBefore.bestMove,
       classification,
-      evBefore:cpBefore,
-      evAfter:cpAfter
+      delta,
+      cpBeforeMover,
+      cpAfterMover
     };
   }
 
@@ -601,11 +624,17 @@ async function analyzeCurrentMove(){
     if(evalData?.bestMove&&evalData.bestMove!==move.from+move.to){
       html+='<div class="best-move-box">&#9881; Engine best: <strong>'+evalData.bestMove+'</strong></div>';
     }
-    el.innerHTML=html;
+    // Put in the dedicated explanation spot if it exists, else full panel
+    const spot=document.getElementById('ai-move-explanation');
+    if(spot)spot.innerHTML=html;
+    else el.innerHTML=html;
   }catch(e){
-    el.innerHTML='<div class="ai-explanation">Connection error. Please try again.</div>';
+    const spot=document.getElementById('ai-move-explanation');
+    const msg='<div class="ai-explanation">Connection error. Please try again.</div>';
+    if(spot)spot.innerHTML=msg;
+    else el.innerHTML=msg;
   }
-  btn.disabled=false;btn.innerHTML='&#9881; Analyze this move';
+  btn.disabled=false;btn.innerHTML='&#9881; Explain this move';
 }
 
 // ── Chess.com API ─────────────────────────────────────────
@@ -792,14 +821,30 @@ function goToMove(idx){
   chess.reset();
   for(let i=0;i<idx;i++)chess.move(moveHistory[i].san);
   renderPieces();renderMoveList();
-  // Update eval bar if we have analysis
   if(moveEvals.length&&idx>0&&moveEvals[idx-1]){
     updateEvalBar(moveEvals[idx-1].evalWhite||0);
-  } else if(idx===0){updateEvalBar(0);}
+    // Auto show classification info in analysis panel
+    const ev=moveEvals[idx-1];
+    const ci=CLASS_INFO[ev.classification];
+    const move=moveHistory[idx-1];
+    let html='<div class="class-badge class-'+ev.classification+'">'+ci.symbol+' '+ci.label+'</div><br>';
+    html+='<div class="eval-score" style="color:'+(ev.evalWhite>0.5?'var(--best)':ev.evalWhite<-0.5?'var(--blunder)':'var(--text-muted)')+'">'+(ev.evalWhite>=0?'+':'')+ev.evalWhite.toFixed(2)+'</div>';
+    html+='<div style="font-size:12px;color:var(--text-muted);margin-bottom:6px">Move '+idx+': '+move.san+(ev.delta!==undefined?' ('+( ev.delta>=0?'+':'')+ev.delta.toFixed(2)+' for '+(move.color==='w'?'White':'Black')+')'  :'')+'</div>';
+    if(ev.bestMove&&ev.bestMove!==move.from+move.to){
+      html+='<div class="best-move-box" style="margin-bottom:8px">&#9881; Engine best: <strong>'+ev.bestMove+'</strong></div>';
+    }
+    html+='<div id="ai-move-explanation"><button class="green-btn" onclick="analyzeCurrentMove()" style="width:100%;justify-content:center;font-size:12px">&#9881; Explain this move</button></div>';
+    document.getElementById('analysis-content').innerHTML=html;
+    // Auto-explain blunders and brilliant moves
+    if(['blunder','miss','brilliant'].includes(ev.classification)){
+      analyzeCurrentMove();
+    }
+  } else if(idx===0){
+    updateEvalBar(0);
+    document.getElementById('analysis-content').innerHTML='<div class="no-data">Navigate to a move to see analysis</div>';
+  }
   const btn=document.getElementById('move-btn-'+(idx-1));
   if(btn)btn.scrollIntoView({block:'nearest'});
-  // Clear analysis panel
-  document.getElementById('analysis-content').innerHTML='<div class="no-data">Click "Analyze this move" for AI explanation</div>';
 }
 function prevMove(){goToMove(currentMoveIdx-1);}
 function nextMove(){goToMove(currentMoveIdx+1);}
