@@ -219,6 +219,7 @@ body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--bg);color:v
 <script>
 const SUPABASE_URL='https://rttwejkhzjjdnbzpwqtg.supabase.co';
 const SUPABASE_KEY='sb_publishable_0bIPDF8WlM5-rQEMvRiIHQ_wu84Buvc';
+const SUPABASE_ANON='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ0dHdlamtoempqZG5ienB3cXRnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAyMjkwODMsImV4cCI6MjA5NTgwNTA4M30.0VoOJyiYcbuufsM1OgwirYKb-ZkLhy3ZEjI34zVJN4M';
 const EDGE='https://rttwejkhzjjdnbzpwqtg.supabase.co/functions/v1/ai-chess';
 
 const PIECES={wK:'&#9812;',wQ:'&#9813;',wR:'&#9814;',wB:'&#9815;',wN:'&#9816;',wP:'&#9817;',
@@ -511,7 +512,7 @@ async function explainMove(){
   try{
     const res=await fetch(EDGE,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY,'apikey':SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_ANON,'apikey':SUPABASE_ANON},
       body:JSON.stringify({system:sys,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const t=await res.text();throw new Error(res.status+': '+t.slice(0,100));}
