@@ -377,18 +377,23 @@ async function runFullAnalysis(){
     const isSac=detectSacrifice(moves[i].from+moves[i].to,new Chess(fens[i]));
 
     // Classification thresholds in CENTIPAWNS (100cp = 1 pawn)
+    // Use generous thresholds because Stockfish depth 14 has eval variance of ~30-50cp
     let cls;
-    if(wasBest&&isSac&&moverGain>50) cls='brilliant';       // sacrifice gaining 0.5+ pawns
-    else if(wasBest&&wpBefore<-200&&moverGain>150) cls='great'; // saving losing position
+    if(wasBest&&isSac&&moverGain>100) cls='brilliant';      // real sacrifice gaining 1+ pawn
+    else if(wasBest&&wpBefore<-300&&moverGain>200) cls='great'; // saving a losing position
     else if(wasBest) cls='best';
-    else if(lossVsBest<10) cls='good';          // within 0.1 pawns of best
-    else if(lossVsBest<50) cls='inaccuracy';    // 0.1-0.5 pawns worse than best
-    else if(lossVsBest<150) cls='miss';         // 0.5-1.5 pawns worse than best
-    else cls='blunder';                          // 1.5+ pawns worse than best
+    else if(lossVsBest<30) cls='good';          // within 0.3 pawns -- covers engine noise
+    else if(lossVsBest<80) cls='inaccuracy';    // 0.3-0.8 pawns worse
+    else if(lossVsBest<200) cls='miss';         // 0.8-2.0 pawns worse
+    else cls='blunder';                          // 2.0+ pawns worse
 
-    // Never call a move a blunder if the position was already equal/winning and moverGain >= 0
-    if(moverGain>=0&&cls==='blunder')cls='inaccuracy';
-    if(moverGain>=0&&cls==='miss')cls='inaccuracy';
+    // Never blunder/miss if mover actually improved or held equal
+    if(moverGain>=-30){
+      if(cls==='blunder')cls='inaccuracy';
+      if(cls==='miss')cls='good';
+    }
+    // Never blunder on a move that kept eval stable (within 50cp of before)
+    if(Math.abs(wpAfter-wpBefore)<50&&cls==='blunder')cls='inaccuracy';
 
     moveEvals.push({wpAfter,wpBefore,moverGain,lossVsBest,wasBest,isSac,cls,bestMove:evals[i].bestMove});
   }
