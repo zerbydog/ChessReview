@@ -511,7 +511,7 @@ async function explainMove(){
   try{
     const res=await fetch(EDGE,{
       method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+SUPABASE_KEY,'apikey':SUPABASE_KEY},
       body:JSON.stringify({system:sys,messages:[{role:'user',content:prompt}]})
     });
     if(!res.ok){const t=await res.text();throw new Error(res.status+': '+t.slice(0,100));}
